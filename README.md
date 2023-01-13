@@ -106,12 +106,12 @@ No third party libraries are used.
 
 ## Code format
 
-You need to provide *cell separators* in order to tell the parser how to convert your code.  
-A *separator* is a line that starts with "##c" or "## c" for code cells, and "##m" or "## m" for markdown cells.  
+You need to provide *cell delimiters* in order to tell the parser how to convert your code.  
+A *delimiter* is a line that starts with "##c" or "## c" for code cells, and "##m" or "## m" for markdown cells.  
 You can be creative but I suggest to use '## code' or '## markdown'.  
 
-The parser can convert docstring or multiline comments (starting and ending with triple quotes) to markdown cells provided they are preceded by the 
-'## markdown' separator.
+The parser can convert docstrings or multiline comments (starting and ending with triple quotes) to markdown cells provided they are preceded by the 
+'## markdown' delimiter.
 
 ## How it works
 
