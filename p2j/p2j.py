@@ -11,10 +11,34 @@ from p2j.utils import _check_files
 # Path to directory
 HERE = os.path.abspath(os.path.dirname(__file__))
 
-TRIPLE_QUOTES = ["\"\"\"", "\'\'\'"]
+TRIPLE_QUOTES = ['"""', "'''"]
 FOUR_SPACES = "{:<4}".format("")
 EIGHT_SPACES = "{:<8}".format("")
 TWELVE_SPACES = "{:<12}".format("")
+
+
+# Read JSON files for .ipynb template
+with open(HERE + "/templates/cell_code.json", encoding="utf-8") as file:
+    CODE = json.load(file)
+with open(HERE + "/templates/cell_markdown.json", encoding="utf-8") as file:
+    MARKDOWN = json.load(file)
+with open(HERE + "/templates/metadata.json", encoding="utf-8") as file:
+    MISC = json.load(file)
+
+
+def append_to_json(was_code, arr, cells):
+    # Check if the last element of the block is a newline
+    if arr[-1] in ("\n", "<br>\n"):
+        arr = arr[:-1]
+
+    # Check if the last block was code or markdown and appends to final array
+    if was_code:
+        CODE["source"] = arr
+        cells.append(dict(CODE))
+    else:
+        MARKDOWN["source"] = arr
+        cells.append(dict(MARKDOWN))
+    return cells
 
 
 def python2jupyter(source_filename: str, target_filename: str, overwrite: bool = False):
@@ -27,134 +51,71 @@ def python2jupyter(source_filename: str, target_filename: str, overwrite: bool =
     """
 
     target_filename = _check_files(
-        source_filename, target_filename, overwrite, conversion="p2j")
+        source_filename, target_filename, overwrite, conversion="p2j"
+    )
 
     # Check if source file exists and read
     try:
         with open(source_filename, "r", encoding="utf-8") as infile:
-            data = [l.rstrip("\n") for l in infile]
+            data = [line.rstrip() for line in infile]
     except FileNotFoundError:
         print("Source file not found. Specify a valid source file.")
         sys.exit(1)
 
-    # Read JSON files for .ipynb template
-    with open(HERE + "/templates/cell_code.json", encoding="utf-8") as file:
-        CODE = json.load(file)
-    with open(HERE + "/templates/cell_markdown.json", encoding="utf-8") as file:
-        MARKDOWN = json.load(file)
-    with open(HERE + "/templates/metadata.json", encoding="utf-8") as file:
-        MISC = json.load(file)
-
     # Initialise variables
-    final = {}              # the dictionary/json of the final notebook
-    cells = []              # an array of all markdown and code cells
-    arr = []                # an array to store individual lines for a cell
-    num_lines = len(data)   # no. of lines of code
-
-    # Initialise variables for checks
-    is_block_comment = False
-    is_running_code = False
-    is_running_comment = False
-    next_is_code = False
-    next_is_nothing = False
-    next_is_function = False
+    final = {}  # the dictionary/json of the final notebook
+    cells = []  # an array of all markdown and code cells
+    arr = []  # an array to store individual lines for a cell
+    is_code = True  # We assume the first cell is code
 
     # Read source code line by line
     for i, line in enumerate(data):
+        # Use delimiters to separate cells
+        if line.startswith("##"):
+            marker = line[3:] if line[2].isspace() else line[2:]
 
-        # Skip if line is empty
-        if line == "":
+            if marker.startswith("m"):
+                if i != 0:
+                    cells = append_to_json(is_code, arr, cells)
+                    arr = []
+                is_code = False
+                continue
+
+            elif marker.startswith("c"):
+                if i != 0:
+                    cells = append_to_json(is_code, arr, cells)
+                    arr = []
+                is_code = True
+                continue
+
+            else:
+                raise ValueError(
+                    f""" Cell markers start with either [## m] for markdown cells or [## c] for code cells.
+                        Found cell marker {line}. """
+                )
+
+        if is_code:
+            arr.append(f"{line}\n")
             continue
-
-        buffer = ""
-
-        # Labels for current line
-        contains_triple_quotes = TRIPLE_QUOTES[0] in line or TRIPLE_QUOTES[1] in line
-        is_code = line.startswith("# pylint") or line.startswith("#pylint") or \
-            line.startswith("#!") or line.startswith("# -*- coding") or \
-            line.startswith("# coding=") or line.startswith("##") or \
-            line.startswith("# FIXME") or line.startswith("#FIXME") or \
-            line.startswith("# TODO") or line.startswith("#TODO") or \
-            line.startswith("# This Python file uses the following encoding:")
-        is_end_of_code = i == num_lines-1
-        starts_with_hash = line.startswith("#")
-
-        # Labels for next line
-        try:
-            next_is_code = not data[i+1].startswith("#")
-        except IndexError:
-            pass
-        try:
-            next_is_nothing = data[i+1] == ""
-        except IndexError:
-            pass
-        try:
-            next_is_function = data[i+1].startswith(FOUR_SPACES) or (
-                next_is_nothing and data[i+2].startswith(FOUR_SPACES))
-        except IndexError:
-            pass
-
-        # Sub-paragraph is a comment but not a running code
-        if not is_running_code and (is_running_comment or
-                                    (starts_with_hash and not is_code) or
-                                    contains_triple_quotes):
-
-            if contains_triple_quotes:
-                is_block_comment = not is_block_comment
-
-            buffer = line.replace(TRIPLE_QUOTES[0], "\n").\
-                replace(TRIPLE_QUOTES[1], "\n")
-
-            if not is_block_comment:
-                if len(buffer) > 1:
-                    buffer = buffer[2:] if buffer[1].isspace() else buffer[1:]
+        else:
+            if line.startswith("#"):
+                if len(line) > 2:
+                    buffer = line[2:] if line[1].isspace() else line[1:]
                 else:
                     buffer = ""
-
-            # Wrap this sub-paragraph as a markdown cell if
-            # next line is end of code OR
-            # (next line is a code but not a block comment) OR
-            # (next line is nothing but not a block comment)
-            if is_end_of_code or (next_is_code and not is_block_comment) or \
-                    (next_is_nothing and not is_block_comment):
-                arr.append("{}".format(buffer))
-                MARKDOWN["source"] = arr
-                cells.append(dict(MARKDOWN))
-                arr = []
-                is_running_comment = False
             else:
-                buffer = buffer + "<br>\n"
-                arr.append("{}".format(buffer))
-                is_running_comment = True
-                continue
-        else:  # Sub-paragraph is a comment but not a running code
-            buffer = line
+                if line in TRIPLE_QUOTES:
+                    continue
+                buffer = line.replace(TRIPLE_QUOTES[0], "").replace(
+                    TRIPLE_QUOTES[1], ""
+                )
+                if len(buffer) > 1:
+                    buffer = buffer[1:] if buffer[0].isspace() else buffer
+            arr.append(f"{buffer + '<br>'}\n")
+            continue
 
-            # Wrap this sub-paragraph as a code cell if
-            # (next line is end of code OR next line is nothing) AND NOT
-            # (next line is nothing AND next line is part of a function)
-            if (is_end_of_code or next_is_nothing) and not (next_is_nothing and next_is_function):
-                arr.append("{}".format(buffer))
-                CODE["source"] = arr
-                cells.append(dict(CODE))
-                arr = []
-                is_running_code = False
-            else:
-                buffer = buffer + "\n"
-
-                # Put another newline character if in a function
-                try:
-                    if data[i+1] == "" and (data[i+2].startswith("    #") or
-                                            data[i+2].startswith("        #") or
-                                            data[i+2].startswith("            #")):
-                        buffer = buffer + "\n"
-                except IndexError:
-                    pass
-
-                arr.append("{}".format(buffer))
-                is_running_code = True
-                continue
-
+    # Take care of the last cell
+    cells = append_to_json(is_code, arr, cells)
     # Finalise the contents of notebook
     final["cells"] = cells
     final.update(MISC)
