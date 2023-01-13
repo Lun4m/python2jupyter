@@ -1,7 +1,10 @@
 # p2j - Python-to-Jupyter parser with zero intervention
 [![PyPI version](https://badge.fury.io/py/p2j.svg)](https://badge.fury.io/py/p2j)
 
-Convert your Python source code to Jupyter notebook with **zero intervention**.
+Convert your Python source code to Jupyter notebook ~~with **zero intervention**~~.  
+For my use case I prefer having the control of selecting what to convert to a code cell or to a markdown cell.  
+Therefore you need to provide cell separators in the form of '## code' or '## markdown'.  
+The first cell is always assumed to be a code cell if not specified otherwise.
 
 Convert this source Python file:
 
@@ -9,19 +12,25 @@ Convert this source Python file:
 # Evaluate the model
 model.evaluate()
 
+## markdown
 # Run the model for a while.
 # Then we hide the model.
+
+##code
 run()
 hide()
 
 print(type(data))
 
-# This is considered as a paragraph too
-# It has 2 lines of comments
+## markdown
+# Multiple paragraphs are possible in a single markdown cell.
+# This one has two.
 
 # The data that we are interested in is made of 8x8 images of digits.
 # Let's have a look at the first 4 images, which is of course
 # stored in the `images` attribute of the dataset.  
+
+## code
 images = list(zip(mnist.images))
 ```
 
@@ -43,28 +52,18 @@ Contents of this README:
 
 ## Installation
 
-PyPI
-
-```bash
-pip install p2j
-```
-
 Clone this repository and run Python's setup.py
 
 ```bash
-git clone https://github.com/remykarem/python2jupyter.git
+git clone https://github.com/Lun4m/python2jupyter.git
 python setup.py install
 ```
 
 or
 
 ```bash
-pip install git+https://github.com/remykarem/python2jupyter#egg=p2j
+pip install git+https://github.com/Lun4m/python2jupyter#egg=p2j
 ```
-
-## Converting
-
-There are 3 main ways you can get your Jupyter notebook:
 
 ### Converting a Python script
 
@@ -73,36 +72,6 @@ p2j train.py
 ```
 
 and you will get a `train.ipynb` Jupyter notebook.
-
-### Converting a script from the Internet (you need to have curl)
-
-Specify the target filename with a `-t`.
-
-```bash
-p2j <(curl https://raw.githubusercontent.com/keras-team/keras/master/examples/mnist_cnn.py) -t myfile.ipynb
-```
-
-### Converting an in-line Python script
-
-```bash
-p2j <(echo "# boilerplate code \n import os") -t myfile2.ipynb
-```
-
-Note:
-
-To run examples from this repository, first clone this repo
-
-```bash
-git clone https://github.com/raibosome/python2jupyter.git
-```
-
-and after you `cd` into the project, run
-
-```bash
-p2j examples/example.py
-```
-
-The `p2j/examples/example.py` is a Keras tutorial on building an autoencoder for the MNIST dataset, found [here](https://github.com/keras-team/keras/blob/master/examples/mnist_denoising_autoencoder.py).
 
 #### Command line usage
 
@@ -139,11 +108,12 @@ Tested on macOS 10.14.3 with Python 3.6.
 
 ## Code format
 
-There is no specific format that you should follow, but generally the parser assumes a format where your code is paragraphed. Check out some examples of well-documented code (and from which you can test!):
+You need to provide *cell separators* in order to tell the parser how to convert your code.  
+A *separator* is a line that starts with "##c" or "## c" for code cells, and "##m" or "## m" for markdown cells.  
+You can be creative but I suggest to use '## code' or '## markdown'.  
 
-- [PyTorch Tutorials](https://pytorch.org/tutorials/beginner/pytorch_with_examples.html)
-- [Keras Examples](https://github.com/keras-team/keras/tree/master/examples)
-- [Scikit Learn Example](https://scikit-learn.org/stable/auto_examples/classification/plot_digits_classification.html#sphx-glr-auto-examples-classification-plot-digits-classification-py)
+The parser can convert docstring or multiline comments (starting and ending with triple quotes) to markdown cells provided they are preceded by the 
+'## markdown' separator.
 
 ## How it works
 
@@ -176,92 +146,6 @@ Jupyter notebooks are just JSON files, like below. A Python script is read line 
 ```
 
 There are 4 basic rules (and exceptions) that I follow to parse the Python script.
-
-### 1. Code or comment
-
-Firstly, any line that starts with a `#` is marked as a comment. So this will be a **markdown cell** in the Jupyter notebook. Everything else that does not start with this character is considered code, so this goes to the **code cell**. There are of course exceptions.
-
-This is a comment
-
-```python
-# Train for 4 epochs
-```
-
-and this is code
-
-```python
-model.train(4)
-```
-
-### 2. Blocks of code and comment
-
-Secondly, code or comment can occur in blocks. A block of comment is several *consecutive* lines of comments that start with `#`. Similarly, several *consecutive* lines of codes that do not start with `#` will be considered as 'a block of code'. This rule is important because we want to ensure that a block of code or comment stays in one cell.
-
-This is a block of comment
-
-```python
-# Load the model and
-# train for 4 epochs and
-# lastly we save the model
-```
-
-and this is a block of code
-
-```python
-model.load()
-model.train(4)
-model.save()
-```
-
-By default, a commented code will not be converted to Markdown if it is placed directly (no newline space) below a block of code. Elsewhere, it will get converted to Markdown. You should preprend the code with two hashes `##` (instead of one) to prevent it from being converted to Markdown.
-
-### 3. Paragraph
-
-Thirdly, I assume that everyone writes his/her script in paragraphs, where each paragraph represents an idea. In a paragraph, there can be code or comments or both.
-
-The following are 5 examples of paragraphs.
-
-```python
-# Evaluate the model
-model.evaluate()
-
-# Run the model for a while.
-# Then we hide the model.
-run()
-hide()
-
-print(type(data))
-
-# This is considered as a paragraph too
-# It has 2 lines of comments
-
-# The data that we are interested in is made of 8x8 images of digits.
-# Let's have a look at the first 4 images, which is of course
-# stored in the `images` attribute of the dataset.  
-images = list(zip(mnist.images))
-```
-
-which translates to the following:
-
-![example](screenshot.png)
-
-### 4. Indentation
-
-Any line of code or comment that is indented by a multiple of 4 spaces is considered code, and will stay in the same code cell as the previous non-empty line. This ensures that function and class definitions, loops and multi-line code stay in one cell.
-
-### 5. Exceptions
-
-Now we handle the exceptions to the above-mentioned rules.
-
-- Docstrings are considered as **markdown cells**, only if they are not indented.
-
-- Lines that begin with `#pylint` or `# pylint` are Pylint directives and are kept as **code cells**.
-
-- Lines that begin with `#FIXME`, `# FIXME`, `#TODO` or `# TODO` are kept as **code cells**.
-
-- Shebang is considered as a **code cell**, eg. `#!/usr/bin/env python3`.
-
-- Encodings like `# -*- coding: utf-8 -*-` are also considered as **code cells**.
 
 ## Feedback and pull requests
 
