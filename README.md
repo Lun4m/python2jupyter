@@ -9,17 +9,21 @@ The first cell is always assumed to be a code cell if not specified otherwise.
 Convert this source Python file:
 
 ```python
+## markdown]
 # Evaluate the model
+
+## code
 model.evaluate()
 
 ## markdown
 # Run the model for a while.
 # Then we hide the model.
 
-##code
+## code
 run()
 hide()
 
+## code
 print(type(data))
 
 ## markdown
