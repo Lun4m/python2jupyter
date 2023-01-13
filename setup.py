@@ -6,7 +6,9 @@ from setuptools import setup
 
 # Package meta-data.
 VERSION = "1.3.3"
-DESCRIPTION = "p2j: Convert Python scripts to Jupyter notebook with minimal intervention"
+DESCRIPTION = (
+    "p2j: Convert Python scripts to Jupyter notebook with minimal intervention"
+)
 
 # Import the README and use it as the long-description.
 # Note: this will only work if README.md is present in your MANIFEST.in file!
@@ -25,8 +27,8 @@ setup(
     long_description=LONG_DESCRIPTION,
     long_description_content_type="text/markdown",
     url="https://github.com/raibosome/python2jupyter",
-    author="Raimi bin Karim",
-    author_email="raimi.bkarim@gmail.com",
+    author="Raimi bin Karim, Manuel Carrer",
+    author_email="manuel.carrer@kjemi.uio.no",
     python_requires=">=3.6.0",
     license="MIT",
     entry_points={
@@ -40,9 +42,9 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.6"
+        "Programming Language :: Python :: 3.6",
     ],
     keywords="convert python jupyter notebook script",
     packages=["p2j"],
-    include_package_data=True
+    include_package_data=True,
 )
