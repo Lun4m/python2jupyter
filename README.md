@@ -1,15 +1,15 @@
-# p2j - Python-to-Jupyter parser with zero intervention
+# p2j - Python-to-Jupyter parser
 [![PyPI version](https://badge.fury.io/py/p2j.svg)](https://badge.fury.io/py/p2j)
 
-Convert your Python source code to Jupyter notebook ~~with **zero intervention**~~.  
-For my use case I prefer having the control of selecting what to convert to a code cell or to a markdown cell.  
-Therefore you need to provide cell separators in the form of '## code' or '## markdown'.  
+Convert your Python source code to Jupyter notebook.
+Compared to the original repo, for my use case I prefer having the control of selecting what to convert to a code cell or to a markdown cell.  
+Therefore you need to add cell delimiters in your script in the form of '## code' or '## markdown' comments.  
 The first cell is always assumed to be a code cell if not specified otherwise.
 
 Convert this source Python file:
 
 ```python
-## markdown]
+## markdown
 # Evaluate the model
 
 ## code
@@ -48,11 +48,9 @@ Contents of this README:
 
 - [Installation](#installation)
 - [Converting](#converting)
-- [Tests](#tests)
 - [Requirements](#requirements)
 - [Code format](#code-Format)
 - [How it works](#how-it-works)
-- [Feedback and pull requests](#feedback-and-pull-requests)
 
 ## Installation
 
@@ -69,7 +67,7 @@ or
 pip install git+https://github.com/Lun4m/python2jupyter#egg=p2j
 ```
 
-### Converting a Python script
+## Converting
 
 ```bash
 p2j train.py
@@ -77,7 +75,7 @@ p2j train.py
 
 and you will get a `train.ipynb` Jupyter notebook.
 
-#### Command line usage
+### Command line usage
 
 To see the command line usage, run `p2j -h` and you will get something like this:
 
@@ -105,10 +103,6 @@ optional arguments:
 - Python >= 3.6
 
 No third party libraries are used.
-
-## Tests
-
-Tested on macOS 10.14.3 with Python 3.6.
 
 ## Code format
 
@@ -148,9 +142,3 @@ Jupyter notebooks are just JSON files, like below. A Python script is read line 
     "nbformat_minor": 2
 }
 ```
-
-There are 4 basic rules (and exceptions) that I follow to parse the Python script.
-
-## Feedback and pull requests
-
-If you do like this, star me maybe? Pull requests are very much encouraged!
